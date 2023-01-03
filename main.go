@@ -12,8 +12,6 @@ import (
 )
 
 func main() {
-
-
 	//var word_key string = "qwertyuiasdfghjk"
 	key_byte := [16]byte{ 0x2b, 0x7e, 0x15, 0x16,
 						0x28, 0xae, 0xd2, 0xa6,
