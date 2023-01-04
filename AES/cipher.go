@@ -8,3 +8,12 @@ func Encrypt (key, plain []byte) (enc []byte){
 
 	return enc
 }
+
+func Decrypt (key, enc []byte) (plain []byte){
+	var w [nb*(nr+1)]uint32
+	expandKey(key, &w)
+
+	plain = decryptBlock(w, enc)
+
+	return plain
+}

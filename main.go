@@ -8,6 +8,8 @@ import (
 	// "os"
 	// "strconv"
 
+	"fmt"
+
 	"github.com/Big0ak/AES/AES"
 )
 
@@ -23,8 +25,9 @@ func main() {
 						0xf6, 0x30, 0x98, 0x07,
 						0xa8, 0x8d, 0xa2, 0x34 };	
 
-	AES.Encrypt(key_byte[:], text_byte[:])
-
+	enc_byte := AES.Encrypt(key_byte[:], text_byte[:])
+	plain_byte := AES.Decrypt(key_byte[:], enc_byte[:])
+	fmt.Print(plain_byte)
 	// file, err := os.Open("text.txt")
 	// if err != nil {
 	// 	log.Fatal(err)
