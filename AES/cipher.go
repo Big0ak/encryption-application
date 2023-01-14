@@ -1,44 +1,64 @@
 package AES
 
 import (
+	"crypto/sha256"
 	"encoding/binary"
 	"errors"
+	"io"
+	"os"
+	"path/filepath"
 	"strings"
 )
 
-func Encrypt(key, plain, ext []byte) ([]byte, error) {
-	// Ключ 128 бит (16 байт)
-	if len(key) != 16 {
-		return nil, errors.New("the key is not supported")
+func Encrypt(key []byte, pathFile string) (string, error) {
+	// исходный файл
+	plainFile, err := os.Open(pathFile)
+	if err != nil {
+		return "", err
 	}
-	sizePlainText := len(plain) // Каждый блок 1 байт => общий размер данных в байтах
-	// TODO: пока максимальный размер только int32, в дальнейшем увеличится
+	
+	f, err := plainFile.Stat()
+	if err != nil {
+		return "", err
+	}
+	sizePlainText := f.Size()
 
-	// Размер не больше размерности для int32 - 15 (т.е ~ 2Гб)
-	if sizePlainText > 2147483632 {
-		return nil, errors.New("large size of the encrypted file")
+	// зашифрованный файл
+	encFile, err := os.Create(CipherFile)
+	if err != nil {
+		return "", err
 	}
+	
+	defer func () {
+		plainFile.Close()
+		encFile.Close()
+	} ()
 
 	// -------------------------------AES------------------------------------------------
 	// Расширения ключа для AES
 	var w [nb * (nr + 1)]uint32
-	expandKey(key, &w)
+	// Ключ 256 бит (32 байт)
+	extended_key := sha256.Sum256(key)
+	expandKey(extended_key[:], &w)
 
 	// Шифрование по блокам 16 байт
-	var l, r int = 0, 16
-	enc := make([]byte, 0) // Зашифрованные данные
-	for ;r <= sizePlainText;{
-		encBlock := encryptBlock(w, plain[l:r])
-		enc = append(enc, encBlock...) // TODO: Каждый раз пересоздает слайс
-		l += 16; r += 16 
+	var n int = 0
+	encBlock := make([]byte, 0, 16) // Зашифрованные данные
+	plainBlock := make([]byte, 16)
+
+	n, err = plainFile.Read(plainBlock)
+	for ;err != io.EOF; {
+		if n == 16 {
+			encBlock = encryptBlock(w, plainBlock[:])
+		} else {
+			// В последний блок добавляется нули, если не хватает размерности
+			encBlock = encryptBlock(w, append(plainBlock[:n], make([]byte, 16 - n)...))
+		}
+		encFile.Write(encBlock)
+
+		n, err = plainFile.Read(plainBlock)
 	}
 
-	// В последний блок добавляется нули, если не хватает размерности
-	remains := 16 - sizePlainText % 16
-	if remains != 16 {
-		encBlock := encryptBlock(w, append(plain[l:sizePlainText], make([]byte, remains)...))
-		enc = append(enc, encBlock...) 
-	}
 	// ----------------------------------------------------------------------------------
 
 	// Размерность и расширение шифруются в послденем блоке
@@ -50,19 +70,17 @@ func Encrypt(key, plain, ext []byte) ([]byte, error) {
 	binary.BigEndian.PutUint64(size, uint64(sizePlainText))
 	
 	// Дополнение нулями в начале, чтобы размерность расширение была 8 байт
+	ext := []byte(filepath.Ext(pathFile))
 	ext = append(make([]byte, 8 - len(ext)), ext...)
 	
-	encBlock := encryptBlock(w, append(size, ext...))
-	enc = append(enc, encBlock...)
+	encBlock = encryptBlock(w, append(size, ext...))
+	encFile.Write(encBlock)
 
-	return enc, nil
+	return CipherFile, nil
 }
 
 func Decrypt(key, enc []byte) ([]byte, string, error) {
-	// Ключ 128 бит (16 байт)
-	if len(key) != 16 {
-		return nil, "", errors.New("the key is not supported")
-	}
+
 	// Размер не больше размерности для int32 - 15 (т.е ~ 2Гб)
 	// Размер зашифрованного сообщение всегда кратен 16 
 	if len(enc) > 2147483647 || len(enc) % 16 != 0 {
@@ -75,7 +93,9 @@ func Decrypt(key, enc []byte) ([]byte, string, error) {
 	// -------------------------------AES------------------------------------------------
 	// Расширения ключа для AES
 	var w [nb * (nr + 1)]uint32
-	expandKey(key, &w)
+	// Ключ 256 бит (32 байт)
+	extended_key := sha256.Sum256(key)
+	expandKey(extended_key[:], &w)
 
 	// Поиск из последнего блока: размера исходных данных и расширение файла
 	plainBlock := decryptBlock(w, enc[len(enc)-16:])

@@ -1,7 +1,13 @@
 package AES
 
-const nr = 10 // AES-128 10 раундов
-const nk = 4 // количество слов в ключе
+const (
+	ExpCrypto   = ".crypto"
+	CipherFile  = "encrypted" + ExpCrypto
+	DectyptFile = "decrypt"
+)
+
+const nr = 14 // AES-256 14 раундов
+const nk = 8 // количество слов в ключе
 const nb = 4 // количество слов в блоке
 
 var rcon = []uint32{ 0x01000000, 0x02000000, 0x04000000, 0x08000000, 0x10000000,

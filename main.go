@@ -11,10 +11,8 @@ package main
 
 import (
 	"errors"
+	//"fmt"
 	"image/color"
-	"io"
-	"log"
-	"os"
 	"time"
 
 	"fyne.io/fyne/v2"
@@ -29,24 +27,39 @@ import (
 	"github.com/Big0ak/AES/AES"
 )
 
-const (
-	ExpCrypto   = ".crypto"
-	CipherFile  = "encrypted" + ExpCrypto
-	DectyptFile = "decrypt"
-)
-
 var sourceFileLoaded = false // сигнал о том, что файл загружен
 var endWork = false          // сигнал о том, что шифрование/дешифрование прошло над файлом успешно => финальное окно
 
 func main() {
+	// ------------------- test value ------------------------------------
+	// text_byte := []byte{ 0x00, 0x11, 0x22, 0x33,
+	// 					0x44, 0x55, 0x66, 0x77,
+	// 					0x88, 0x99, 0xaa, 0xbb,
+	// 					0xcc, 0xdd, 0xee, 0xff}
+	// key_byte := []byte{ 0x00, 0x01, 0x02, 0x03,
+	// 					0x04, 0x05, 0x06, 0x07,
+	// 					0x08, 0x09, 0x0a, 0x0b,
+	// 					0x0c, 0x0d, 0x0e, 0x0f,
+	// 					0x10, 0x11, 0x12, 0x13,
+	// 					0x14, 0x15, 0x16, 0x17,
+	// 					0x18, 0x19, 0x1a, 0x1b,
+	// 					0x1c, 0x1d, 0x1e, 0x1f,};
+ 
+	// enc_byte, _ := AES.Encrypt(key_byte[:], text_byte[:], []byte("fe3"))
+	// plain_byte, _, _ := AES.Decrypt(key_byte[:], enc_byte[:])
+	// fmt.Print(plain_byte)
+	// --------------------------------------------------------------------
+	
 	var (
-		key        = ""
-		readerFile fyne.URIReadCloser
+		key = ""
+		nameFile = ""
+		ext = ""
+		pathFile = ""
 	)
 
 	a := app.New()
 	w := a.NewWindow(" ")
-	w.Resize(fyne.NewSize(300, 400))
+	w.Resize(fyne.NewSize(250, 350))
 	w.CenterOnScreen()   // окно по центру экрана
 	w.SetFixedSize(true) // нельзя менять размер
 	w.SetMaster()        // главное окно
@@ -57,14 +70,13 @@ func main() {
 
 	text_title := canvas.NewText("Шифрование файлов AES", color.Black)
 	text_title.Alignment = fyne.TextAlignCenter
-	text_title.TextSize = 16
-	text_title.TextStyle.Bold = true
-	text_title.Resize(fyne.NewSize(280,80))
-	text_title.Move(fyne.NewPos(0,20))
+	text_title.TextSize = 18
+	text_title.Resize(fyne.NewSize(240,30))
+	text_title.Move(fyne.NewPos(0,30))
 
 	img_fileUpload := canvas.NewImageFromFile("file_upload.png")
 	img_fileUpload.Resize(fyne.NewSize(80, 80))
-	img_fileUpload.Move(fyne.NewPos(100, 160))
+	img_fileUpload.Move(fyne.NewPos(85, 135))
 
 	btn_openFile := container.New(
 		layout.NewMaxLayout(),
@@ -76,7 +88,9 @@ func main() {
 			w2.SetFixedSize(true)
 			dialog.ShowFileOpen(
 				func(uc fyne.URIReadCloser, err error) {
-					readerFile = uc
+					nameFile = uc.URI().Name()
+					ext = uc.URI().Extension()
+					pathFile = uc.URI().Path()
 					sourceFileLoaded = true
 					w2.Close()
 				},
@@ -84,21 +98,23 @@ func main() {
 			)
 			w2.Show()
 		}),
-		canvas.NewHorizontalGradient(color.RGBA{12, 0, 255, 255}, color.Transparent),
+		canvas.NewHorizontalGradient(color.RGBA{81, 81, 81, 255}, color.Transparent),
 		
 	)
-	btn_openFile.Resize(fyne.NewSize(290, 100))
-	btn_openFile.Move(fyne.NewPos(0, 150))
+	btn_openFile.Resize(fyne.NewSize(240, 100))
+	btn_openFile.Move(fyne.NewPos(0, 125))
 
-	img_textFooter := canvas.NewImageFromFile("text_footer.png")
-	img_textFooter.Resize(fyne.NewSize(300, 80))
-	img_textFooter.Move(fyne.NewPos(0, 285))
+	text_footer := canvas.NewText("Загрузите файл чтобы продолжить", color.Black)
+	text_footer.Alignment = fyne.TextAlignCenter
+	text_footer.TextSize = 13
+	text_footer.Resize(fyne.NewSize(240,30))
+	text_footer.Move(fyne.NewPos(0,272))
 
 	cont_UploadFile := container.NewWithoutLayout(
 		text_title,
 		btn_openFile,
 		img_fileUpload,
-		img_textFooter,
+		text_footer,
 	)
 
 	//-------------------------- ЭКРАН ВВОДА КЛЮЧА --------------------------
@@ -113,17 +129,17 @@ func main() {
 		layout.NewSpacer(),
 	)
 
-	nameFile := binding.NewString()
+	field_nameFile := binding.NewString()
 	box_nameFile := container.NewHBox(
 		layout.NewSpacer(),
-		widget.NewLabelWithData(nameFile),
+		widget.NewLabelWithData(field_nameFile),
 		layout.NewSpacer(),
 	)
 
 	wid_inputKey := widget.NewPasswordEntry()
 	wid_inputKey.SetPlaceHolder("Введите ключ")
 	wid_inputKey.Validator = func (input string) error {
-		if len(input) != 16 {
+		if len(input) < 8 {
 			return errors.New("")
 		}
 		return nil
@@ -141,39 +157,28 @@ func main() {
 
 			key = wid_inputKey.Text
 
-			if readerFile.URI().Extension() == ExpCrypto {
-				// Расшифровка
-				enc, err := io.ReadAll(readerFile)
-				if err != nil {
-					log.Fatal(err)
-				}
-				plain_byte, ext, err := AES.Decrypt([]byte(key), enc[:])
-				if err == nil {
-					file, _ := os.Create(DectyptFile + ext)
-					file.Write(plain_byte)
-					file.Close()
-				} else {
-					log.Fatal(err)
-				}
+			if ext == AES.ExpCrypto {
+				// // Расшифровка
+				// enc, err := io.ReadAll(readerFile)
+				// if err != nil {
+				// 	log.Fatal(err)
+				// }
+				// plain_byte, ext, err := AES.Decrypt([]byte(key), enc[:])
+				// if err == nil {
+				// 	file, _ := os.Create(DectyptFile + ext)
+				// 	file.Write(plain_byte)
+				// 	file.Close()
+				// } else {
+				// 	log.Fatal(err)
+				// }
 			} else {
 				// Шифрование
-				plain, err := io.ReadAll(readerFile)
-				if err != nil {
-					log.Fatal(err)
-				}
-				enc_byte, err := AES.Encrypt([]byte(key), plain[:], []byte(readerFile.URI().Extension()))
-				if err == nil {
-					file, _ := os.Create(CipherFile)
-					file.Write(enc_byte)
-					file.Close()
-				} else {
-					log.Fatal(err)
-				}
+				_, _ = AES.Encrypt([]byte(key), pathFile)
 			}
 	
 			endWork = true
 		} else {
-			checkKey.Set("ключ минимум 16 символов")
+			checkKey.Set("ключ минимум 8 символов")
 		}
 	})
 
@@ -200,7 +205,7 @@ func main() {
 
 	text_end := canvas.NewText("Работа над файлом завершена!", color.Black)
 	text_end.Alignment = fyne.TextAlignCenter
-	text_end.TextSize = 14
+	text_end.TextSize = 13
 
 	cont_endScene := container.NewVBox(
 		box_endWork,
@@ -225,7 +230,7 @@ func main() {
 		for range time.Tick(time.Second) {
 			if sourceFileLoaded {
 				cont_UploadFile.Hide()
-				nameFile.Set(readerFile.URI().Name())
+				field_nameFile.Set(nameFile)
 				cont_enteringKey.Show()
 				sourceFileLoaded = false
 			}

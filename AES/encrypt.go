@@ -1,5 +1,9 @@
 package AES
 
+import (
+	"encoding/binary"
+)
+
 func gfMul(a, b uint32) uint32 {
 	i := a
 	j := b
@@ -24,10 +28,10 @@ func gfMul(a, b uint32) uint32 {
 //------------------------------------------------------------------------------------------------------
 
 func mixColum(s uint32) uint32 {
-	return (gfMul(2, s>>24 &0xff) ^ gfMul(3, s>>16&0xff) ^ s>>8&0xff^s&0xff)<<24 |
-		(s>>24&0xff ^ gfMul(2, s>>16&0xff) ^ gfMul(3, s>>8&0xff) ^ s&0xff)<<16 |
-		(s>>24&0xff ^ s>>16&0xff^gfMul(2, s>>8&0xff) ^ gfMul(3, s&0xff))<<8 |
-		(gfMul(3, s>>24&0xff) ^ s>>16&0xff ^ s>>8&0xff ^ gfMul(2, s&0xff))
+	return (gfMul(2, s>>24&0xff)^gfMul(3, s>>16&0xff)^s>>8&0xff^s&0xff)<<24 |
+		(s>>24&0xff^gfMul(2, s>>16&0xff)^gfMul(3, s>>8&0xff)^s&0xff)<<16 |
+		(s>>24&0xff^s>>16&0xff^gfMul(2, s>>8&0xff)^gfMul(3, s&0xff))<<8 |
+		(gfMul(3, s>>24&0xff)^s>>16&0xff^s>>8&0xff^gfMul(2, s&0xff))
 }
 
 func subBytesCol(s uint32) uint32 {
@@ -38,11 +42,11 @@ func subBytesCol(s uint32) uint32 {
 }
 
 func encryptBlock(w [nb * (nr + 1)]uint32, plainBlock []byte) []byte {
-	// разбиение на столбцы исходного блока
-	s0 := uint32(plainBlock[0])<<24 | uint32(plainBlock[4])<<16 | uint32(plainBlock[8])<<8 | uint32(plainBlock[12])
-	s1 := uint32(plainBlock[1])<<24 | uint32(plainBlock[5])<<16 | uint32(plainBlock[9])<<8 | uint32(plainBlock[13])
-	s2 := uint32(plainBlock[2])<<24 | uint32(plainBlock[6])<<16 | uint32(plainBlock[10])<<8 | uint32(plainBlock[14])
-	s3 := uint32(plainBlock[3])<<24 | uint32(plainBlock[7])<<16 | uint32(plainBlock[11])<<8 | uint32(plainBlock[15])
+	// разбиение на столбцы исходного блока (как в официальной документации)
+	s0 := binary.BigEndian.Uint32(plainBlock[0:4])
+	s1 := binary.BigEndian.Uint32(plainBlock[4:8])
+	s2 := binary.BigEndian.Uint32(plainBlock[8:12])
+	s3 := binary.BigEndian.Uint32(plainBlock[12:16])
 
 	// AddRoundKey сразу применяется ко всему столбцу
 	s0 ^= w[0]
@@ -68,12 +72,12 @@ func encryptBlock(w [nb * (nr + 1)]uint32, plainBlock []byte) []byte {
 	s2 = subBytesCol((t2>>24&0xff)<<24|(t3>>16&0xff)<<16|(t0>>8&0xff)<<8|t1&0xff) ^ w[4*nr+2]
 	s3 = subBytesCol((t3>>24&0xff)<<24|(t0>>16&0xff)<<16|(t1>>8&0xff)<<8|t2&0xff) ^ w[4*nr+3]
 
-	encBlock := make([]byte, 0)
+	encBlock := make([]byte, len(plainBlock))
 	// сборка из столбцов в зашифрованный блок
-	encBlock = append(encBlock, []byte{byte(s0 >> 24 & 0xff), byte(s1 >> 24 & 0xff), byte(s2 >> 24 & 0xff), byte(s3 >> 24 & 0xff)}...)
-	encBlock = append(encBlock, []byte{byte(s0 >> 16 & 0xff), byte(s1 >> 16 & 0xff), byte(s2 >> 16 & 0xff), byte(s3 >> 16 & 0xff)}...)
-	encBlock = append(encBlock, []byte{byte(s0 >> 8 & 0xff), byte(s1 >> 8 & 0xff), byte(s2 >> 8 & 0xff), byte(s3 >> 8 & 0xff)}...)
-	encBlock = append(encBlock, []byte{byte(s0 & 0xff), byte(s1 & 0xff), byte(s2 & 0xff), byte(s3 & 0xff)}...)
+	binary.BigEndian.PutUint32(encBlock[0:4], s0)
+	binary.BigEndian.PutUint32(encBlock[4:8], s1)
+	binary.BigEndian.PutUint32(encBlock[8:12], s2)
+	binary.BigEndian.PutUint32(encBlock[12:16], s3)
 	return encBlock
 }
 
@@ -96,11 +100,11 @@ func invSubBytesCol(s uint32) uint32 {
 }
 
 func decryptBlock(w [nb * (nr + 1)]uint32, encBlock []byte) []byte {
-	// разбиение на столбцы исходного блока
-	s0 := uint32(encBlock[0])<<24 | uint32(encBlock[4])<<16 | uint32(encBlock[8])<<8 | uint32(encBlock[12])
-	s1 := uint32(encBlock[1])<<24 | uint32(encBlock[5])<<16 | uint32(encBlock[9])<<8 | uint32(encBlock[13])
-	s2 := uint32(encBlock[2])<<24 | uint32(encBlock[6])<<16 | uint32(encBlock[10])<<8 | uint32(encBlock[14])
-	s3 := uint32(encBlock[3])<<24 | uint32(encBlock[7])<<16 | uint32(encBlock[11])<<8 | uint32(encBlock[15])
+	// разбиение на столбцы исходного блока (как в официальной документации)
+	s0 := binary.BigEndian.Uint32(encBlock[0:4])
+	s1 := binary.BigEndian.Uint32(encBlock[4:8])
+	s2 := binary.BigEndian.Uint32(encBlock[8:12])
+	s3 := binary.BigEndian.Uint32(encBlock[12:16])
 
 	// AddRoundKey сразу применяется ко всему столбцу
 	s0 ^= w[4*nr]
@@ -126,11 +130,11 @@ func decryptBlock(w [nb * (nr + 1)]uint32, encBlock []byte) []byte {
 	s2 = invSubBytesCol((t2>>24&0xff)<<24|(t1>>16&0xff)<<16|(t0>>8&0xff)<<8|t3&0xff) ^ w[2]
 	s3 = invSubBytesCol((t3>>24&0xff)<<24|(t2>>16&0xff)<<16|(t1>>8&0xff)<<8|t0&0xff) ^ w[3]
 
-	plainBlock := make([]byte, 0)
+	plainBlock := make([]byte, len(encBlock))
 	// сборка из столбцов в расшифрованный блок
-	plainBlock = append(plainBlock, []byte{byte(s0 >> 24 & 0xff), byte(s1 >> 24 & 0xff), byte(s2 >> 24 & 0xff), byte(s3 >> 24 & 0xff)}...)
-	plainBlock = append(plainBlock, []byte{byte(s0 >> 16 & 0xff), byte(s1 >> 16 & 0xff), byte(s2 >> 16 & 0xff), byte(s3 >> 16 & 0xff)}...)
-	plainBlock = append(plainBlock, []byte{byte(s0 >> 8 & 0xff), byte(s1 >> 8 & 0xff), byte(s2 >> 8 & 0xff), byte(s3 >> 8 & 0xff)}...)
-	plainBlock = append(plainBlock, []byte{byte(s0 & 0xff), byte(s1 & 0xff), byte(s2 & 0xff), byte(s3 & 0xff)}...)
+	binary.BigEndian.PutUint32(plainBlock[0:4], s0)
+	binary.BigEndian.PutUint32(plainBlock[4:8], s1)
+	binary.BigEndian.PutUint32(plainBlock[8:12], s2)
+	binary.BigEndian.PutUint32(plainBlock[12:16], s3)
 	return plainBlock
 }
