@@ -11,7 +11,7 @@ import (
 )
 
 func Encrypt(key []byte, pathFile string) (string, error) {
-	// исходный файл
+	// Исходный файл
 	plainFile, err := os.Open(pathFile)
 	if err != nil {
 		return "", err
@@ -21,18 +21,14 @@ func Encrypt(key []byte, pathFile string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	sizePlainText := f.Size()
+	// Размер исходного файла в байтах
+	sizePlainFile := f.Size()
 
-	// зашифрованный файл
+	// Моздание зашифрованного файла
 	encFile, err := os.Create(CipherFile)
 	if err != nil {
 		return "", err
 	}
-	
-	defer func () {
-		plainFile.Close()
-		encFile.Close()
-	} ()
 
 	// -------------------------------AES------------------------------------------------
 	// Расширения ключа для AES
@@ -67,7 +63,7 @@ func Encrypt(key []byte, pathFile string) (string, error) {
 
 	// Переводится в массив [8]byte (8 байт всего)
 	size := make([]byte, 8)
-	binary.BigEndian.PutUint64(size, uint64(sizePlainText))
+	binary.BigEndian.PutUint64(size, uint64(sizePlainFile))
 	
 	// Дополнение нулями в начале, чтобы размерность расширение была 8 байт
 	ext := []byte(filepath.Ext(pathFile))
@@ -76,20 +72,31 @@ func Encrypt(key []byte, pathFile string) (string, error) {
 	encBlock = encryptBlock(w, append(size, ext...))
 	encFile.Write(encBlock)
 
+	plainFile.Close()
+	encFile.Close()
+
 	return CipherFile, nil
 }
 
-func Decrypt(key, enc []byte) ([]byte, string, error) {
-
-	// Размер не больше размерности для int32 - 15 (т.е ~ 2Гб)
-	// Размер зашифрованного сообщение всегда кратен 16 
-	if len(enc) > 2147483647 || len(enc) % 16 != 0 {
-		return nil, "", errors.New("large encrypted file or is it corrupted")
+func Decrypt(key []byte, pathFile string) (string, error) {
+	// Исходный файл
+	encFile, err := os.Open(pathFile)
+	if err != nil {
+		return "", err
 	}
 
-	var sizePlainText uint64
-	var ext string
+	f, err := encFile.Stat()
+	if err != nil {
+		return "", err
+	}
+	// Размер исходного файла в байтах
+	sizeEncFile := f.Size()
 
+	// в программе заложено, если файл не кратен 16 блокам => он поврежден (см. Encrypt)
+	if sizeEncFile < 32 || sizeEncFile % 16 != 0 {
+		return "", errors.New("Зашифрованный файл поврежден")
+	}
+	
 	// -------------------------------AES------------------------------------------------
 	// Расширения ключа для AES
 	var w [nb * (nr + 1)]uint32
@@ -98,26 +105,48 @@ func Decrypt(key, enc []byte) ([]byte, string, error) {
 	expandKey(extended_key[:], &w)
 
 	// Поиск из последнего блока: размера исходных данных и расширение файла
-	plainBlock := decryptBlock(w, enc[len(enc)-16:])
-	sizePlainText = binary.BigEndian.Uint64(plainBlock[0:8])
-	ext = strings.Replace(string(plainBlock[8:16]), "\x00" , "", -1)
+	encBlock := make([]byte, 16)
+	plainBlock := make([]byte, 0, 16)
+
+	encFile.ReadAt(encBlock, sizeEncFile-16)
+
+	plainBlock = decryptBlock(w, encBlock)
+	sizePlainFile := binary.BigEndian.Uint64(plainBlock[0:8])
+	ext := strings.Replace(string(plainBlock[8:16]), "\x00" , "", -1)
+
+	// если размерности файлов не совпадают после расшифровки => неверный ключ
+	// в открытом тексте может быть меньше байт чем в зашифрованном
+	// потому что в зашифрованном добавляется дополнительный блок до ровных 16 байт
+	diff := (sizeEncFile - 16) - int64(sizePlainFile)
+	if diff >= 16 || diff < 0 {
+		return "", errors.New("Неверный ключ")
+	}
+
+	plainFile, err := os.Create(DectyptFile + ext)
+	if err != nil {
+		return "", err
+	}
 
 	// Расшифрование по блокам 16 байт
-	var l, r uint64 = 0, 16
-	plain := make([]byte, 0)
-	for ;r <= sizePlainText;{
-		plainBlock = decryptBlock(w, enc[l:r])
-		plain = append(plain, plainBlock...) // TODO: Каждый раз пересоздает слайс
-		l += 16; r += 16 
+	var offset uint64 = 0
+	for ;offset + 16 <= sizePlainFile;{
+		encFile.ReadAt(encBlock, int64(offset)) 
+		plainBlock = decryptBlock(w, encBlock)
+		plainFile.Write(plainBlock)
+		offset += 16 
 	}
 
 	// Последний блок
-	remains := int(sizePlainText % 16)
+	remains := int(sizePlainFile % 16)
 	if remains != 0 {
-		plainBlock := decryptBlock(w, enc[l:r])
-		plain = append(plain, plainBlock[0:remains]...) 
+		encFile.ReadAt(encBlock, int64(offset))
+		plainBlock := decryptBlock(w, encBlock)
+		plainFile.Write(plainBlock[0:remains]) 
 	}
 	// ----------------------------------------------------------------------------------
 
-	return plain, ext, nil
+	plainFile.Close()
+	encFile.Close()
+
+	return DectyptFile + ext, nil
 }

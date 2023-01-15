@@ -11,7 +11,6 @@ package main
 
 import (
 	"errors"
-	//"fmt"
 	"image/color"
 	"time"
 
@@ -27,8 +26,11 @@ import (
 	"github.com/Big0ak/AES/AES"
 )
 
-var sourceFileLoaded = false // сигнал о том, что файл загружен
-var endWork = false          // сигнал о том, что шифрование/дешифрование прошло над файлом успешно => финальное окно
+var (
+	sourceFileLoaded = false // сигнал о том, что файл загружен
+	endWork = false          // сигнал о том, что шифрование/дешифрование прошло над файлом успешно => финальное окно
+	newWork = false 		 // возвращение на главный экран
+)
 
 func main() {
 	// ------------------- test value ------------------------------------
@@ -44,16 +46,14 @@ func main() {
 	// 					0x14, 0x15, 0x16, 0x17,
 	// 					0x18, 0x19, 0x1a, 0x1b,
 	// 					0x1c, 0x1d, 0x1e, 0x1f,};
- 
 	// enc_byte, _ := AES.Encrypt(key_byte[:], text_byte[:], []byte("fe3"))
 	// plain_byte, _, _ := AES.Decrypt(key_byte[:], enc_byte[:])
-	// fmt.Print(plain_byte)
 	// --------------------------------------------------------------------
-	
+
 	var (
-		key = ""
+		key      = ""
 		nameFile = ""
-		ext = ""
+		ext      = ""
 		pathFile = ""
 	)
 
@@ -63,7 +63,7 @@ func main() {
 	w.CenterOnScreen()   // окно по центру экрана
 	w.SetFixedSize(true) // нельзя менять размер
 	w.SetMaster()        // главное окно
-	icon, _ := fyne.LoadResourceFromPath("icon.png")
+	icon, _ := fyne.LoadResourceFromPath("icon.ico")
 	w.SetIcon(icon)
 
 	//-------------------------- ЭКРАН ЗАГРУЗКИ ФАЙЛА --------------------------
@@ -71,10 +71,10 @@ func main() {
 	text_title := canvas.NewText("Шифрование файлов AES", color.Black)
 	text_title.Alignment = fyne.TextAlignCenter
 	text_title.TextSize = 18
-	text_title.Resize(fyne.NewSize(240,30))
-	text_title.Move(fyne.NewPos(0,30))
+	text_title.Resize(fyne.NewSize(240, 30))
+	text_title.Move(fyne.NewPos(0, 30))
 
-	img_fileUpload := canvas.NewImageFromFile("file_upload.png")
+	img_fileUpload := canvas.NewImageFromResource(resourceFileUploadPng)
 	img_fileUpload.Resize(fyne.NewSize(80, 80))
 	img_fileUpload.Move(fyne.NewPos(85, 135))
 
@@ -99,7 +99,6 @@ func main() {
 			w2.Show()
 		}),
 		canvas.NewHorizontalGradient(color.RGBA{81, 81, 81, 255}, color.Transparent),
-		
 	)
 	btn_openFile.Resize(fyne.NewSize(240, 100))
 	btn_openFile.Move(fyne.NewPos(0, 125))
@@ -107,8 +106,8 @@ func main() {
 	text_footer := canvas.NewText("Загрузите файл чтобы продолжить", color.Black)
 	text_footer.Alignment = fyne.TextAlignCenter
 	text_footer.TextSize = 13
-	text_footer.Resize(fyne.NewSize(240,30))
-	text_footer.Move(fyne.NewPos(0,272))
+	text_footer.Resize(fyne.NewSize(240, 30))
+	text_footer.Move(fyne.NewPos(0, 272))
 
 	cont_UploadFile := container.NewWithoutLayout(
 		text_title,
@@ -119,7 +118,7 @@ func main() {
 
 	//-------------------------- ЭКРАН ВВОДА КЛЮЧА --------------------------
 
-	img_fileIcon := canvas.NewImageFromFile("file_icon.png")
+	img_fileIcon := canvas.NewImageFromResource(resourceFileIconPng)
 	box_fileIcon := container.NewHBox(
 		layout.NewSpacer(),
 		container.New(
@@ -138,7 +137,8 @@ func main() {
 
 	wid_inputKey := widget.NewPasswordEntry()
 	wid_inputKey.SetPlaceHolder("Введите ключ")
-	wid_inputKey.Validator = func (input string) error {
+	// Валидация ключа
+	wid_inputKey.Validator = func(input string) error {
 		if len(input) < 8 {
 			return errors.New("")
 		}
@@ -153,30 +153,21 @@ func main() {
 	)
 
 	btn_crypto := widget.NewButton("Crypto", func() {
-		if err := wid_inputKey.Validate(); err == nil{
-
+		// Проверка валидации ключа
+		if err := wid_inputKey.Validate(); err == nil {
 			key = wid_inputKey.Text
-
 			if ext == AES.ExpCrypto {
-				// // Расшифровка
-				// enc, err := io.ReadAll(readerFile)
-				// if err != nil {
-				// 	log.Fatal(err)
-				// }
-				// plain_byte, ext, err := AES.Decrypt([]byte(key), enc[:])
-				// if err == nil {
-				// 	file, _ := os.Create(DectyptFile + ext)
-				// 	file.Write(plain_byte)
-				// 	file.Close()
-				// } else {
-				// 	log.Fatal(err)
-				// }
+				// Расшифровка
+				_, err = AES.Decrypt([]byte(key), pathFile)
 			} else {
 				// Шифрование
-				_, _ = AES.Encrypt([]byte(key), pathFile)
+				_, err = AES.Encrypt([]byte(key), pathFile)
 			}
-	
-			endWork = true
+			if err != nil {
+				dialog.ShowError(err, w)
+			} else {
+				endWork = true
+			}			
 		} else {
 			checkKey.Set("ключ минимум 8 символов")
 		}
@@ -193,7 +184,7 @@ func main() {
 
 	//-------------------------- ЭКРАН ЗАВЕРШЕНИЯ РАБОТЫ --------------------------
 
-	img_endWork := canvas.NewImageFromFile("end_work.png")
+	img_endWork := canvas.NewImageFromResource(resourceEndWorkPng)
 	box_endWork := container.NewHBox(
 		layout.NewSpacer(),
 		container.New(
@@ -207,9 +198,14 @@ func main() {
 	text_end.Alignment = fyne.TextAlignCenter
 	text_end.TextSize = 13
 
+	btn_newWork := widget.NewButton("На главную", func() {
+		newWork = true
+	})
+
 	cont_endScene := container.NewVBox(
 		box_endWork,
 		text_end,
+		btn_newWork,
 	)
 	cont_endScene.Hide()
 
@@ -230,7 +226,11 @@ func main() {
 		for range time.Tick(time.Second) {
 			if sourceFileLoaded {
 				cont_UploadFile.Hide()
-				field_nameFile.Set(nameFile)
+				if len(nameFile) > 30 {
+					field_nameFile.Set(nameFile[0:27] + "...")
+				} else {
+					field_nameFile.Set(nameFile)
+				}
 				cont_enteringKey.Show()
 				sourceFileLoaded = false
 			}
@@ -239,6 +239,13 @@ func main() {
 				cont_enteringKey.Hide()
 				cont_endScene.Show()
 				endWork = false
+			}
+
+			if newWork {
+				cont_endScene.Hide()
+				cont_UploadFile.Show()
+				wid_inputKey.SetText("")
+				newWork = false
 			}
 		}
 	}()
