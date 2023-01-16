@@ -3,7 +3,7 @@ package AES
 const (
 	ExpCrypto   = ".crypto"
 	CipherFile  = "encrypted" + ExpCrypto
-	DectyptFile = "decrypt"
+	DecryptFile = "decrypt"
 )
 
 const nr = 14 // AES-256 14 раундов

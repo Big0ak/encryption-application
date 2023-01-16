@@ -3,11 +3,12 @@ package AES
 import (
 	"crypto/sha256"
 	"encoding/binary"
-	"errors"
 	"io"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/Big0ak/AES/spoof"
 )
 
 func Encrypt(key []byte, pathFile string) (string, error) {
@@ -94,7 +95,9 @@ func Decrypt(key []byte, pathFile string) (string, error) {
 
 	// в программе заложено, если файл не кратен 16 блокам => он поврежден (см. Encrypt)
 	if sizeEncFile < 32 || sizeEncFile % 16 != 0 {
-		return "", errors.New("Зашифрованный файл поврежден")
+		s := spoof.NewSpoofExt(".txt", DecryptFile)
+		return s.GenerateSpoofFile(), nil
+		//return "", errors.New("Зашифрованный файл поврежден")
 	}
 	
 	// -------------------------------AES------------------------------------------------
@@ -119,10 +122,12 @@ func Decrypt(key []byte, pathFile string) (string, error) {
 	// потому что в зашифрованном добавляется дополнительный блок до ровных 16 байт
 	diff := (sizeEncFile - 16) - int64(sizePlainFile)
 	if diff >= 16 || diff < 0 {
-		return "", errors.New("Неверный ключ")
+		s := spoof.NewSpoofExt(".txt", DecryptFile)
+		return s.GenerateSpoofFile(), nil
+		//return "", errors.New("Неверный ключ")
 	}
 
-	plainFile, err := os.Create(DectyptFile + ext)
+	plainFile, err := os.Create(DecryptFile + ext)
 	if err != nil {
 		return "", err
 	}
@@ -148,5 +153,5 @@ func Decrypt(key []byte, pathFile string) (string, error) {
 	plainFile.Close()
 	encFile.Close()
 
-	return DectyptFile + ext, nil
+	return DecryptFile + ext, nil
 }
