@@ -135,6 +135,20 @@ func main() {
 		layout.NewSpacer(),
 	)
 
+	field_typeWork := binding.NewString()
+	box_typeWork := container.NewHBox(
+		layout.NewSpacer(),
+		widget.NewLabelWithData(field_typeWork),
+		layout.NewSpacer(),
+	)
+
+	field_checkKey := binding.NewString()
+	box_checkKey := container.NewHBox(
+		layout.NewSpacer(),
+		widget.NewLabelWithData(field_checkKey),
+		layout.NewSpacer(),
+	)
+
 	wid_inputKey := widget.NewPasswordEntry()
 	wid_inputKey.SetPlaceHolder("Введите ключ")
 	// Валидация ключа
@@ -144,13 +158,6 @@ func main() {
 		}
 		return nil
 	}
-
-	checkKey := binding.NewString()
-	box_checkKey := container.NewHBox(
-		layout.NewSpacer(),
-		widget.NewLabelWithData(checkKey),
-		layout.NewSpacer(),
-	)
 
 	btn_crypto := widget.NewButton("Crypto", func() {
 		// Проверка валидации ключа
@@ -169,13 +176,14 @@ func main() {
 				endWork = true
 			}			
 		} else {
-			checkKey.Set("ключ минимум 8 символов")
+			field_checkKey.Set("ключ минимум 8 символов")
 		}
 	})
 
 	cont_enteringKey := container.NewVBox(
 		box_fileIcon,
 		box_nameFile,
+		box_typeWork,
 		box_checkKey,
 		wid_inputKey,
 		btn_crypto,
@@ -185,25 +193,26 @@ func main() {
 	//-------------------------- ЭКРАН ЗАВЕРШЕНИЯ РАБОТЫ --------------------------
 
 	img_endWork := canvas.NewImageFromResource(resourceEndWorkPng)
-	box_endWork := container.NewHBox(
-		layout.NewSpacer(),
-		container.New(
-			layout.NewGridWrapLayout(fyne.NewSize(96, 96)),
-			img_endWork,
-		),
-		layout.NewSpacer(),
-	)
+	img_endWork.Resize(fyne.NewSize(80,80))
+	img_endWork.Move(fyne.NewPos(80,30))
 
 	text_end := canvas.NewText("Работа над файлом завершена!", color.Black)
 	text_end.Alignment = fyne.TextAlignCenter
 	text_end.TextSize = 13
+	text_end.Resize(fyne.NewSize(240, 30))
+	text_end.Move(fyne.NewPos(0, 120))
 
-	btn_newWork := widget.NewButton("На главную", func() {
-		newWork = true
-	})
+	btn_newWork := container.NewVBox(
+		layout.NewSpacer(),
+		widget.NewButton("На главную", func() {
+			newWork = true
+		}),
+	)
+	btn_newWork.Resize(fyne.NewSize(160,20))
+	btn_newWork.Move(fyne.NewPos(45,310))
 
-	cont_endScene := container.NewVBox(
-		box_endWork,
+	cont_endScene := container.NewWithoutLayout(
+		img_endWork,
 		text_end,
 		btn_newWork,
 	)
@@ -230,6 +239,11 @@ func main() {
 					field_nameFile.Set(nameFile[0:27] + "...")
 				} else {
 					field_nameFile.Set(nameFile)
+				}
+				if ext == AES.ExpCrypto {
+					field_typeWork.Set("введите ключ для расшифровки")
+				} else {
+					field_typeWork.Set("введите ключ для шифрования")
 				}
 				cont_enteringKey.Show()
 				sourceFileLoaded = false
