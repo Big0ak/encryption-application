@@ -63,8 +63,6 @@ func main() {
 	w.CenterOnScreen()   // окно по центру экрана
 	w.SetFixedSize(true) // нельзя менять размер
 	w.SetMaster()        // главное окно
-	icon, _ := fyne.LoadResourceFromPath("icon.ico")
-	w.SetIcon(icon)
 
 	//-------------------------- ЭКРАН ЗАГРУЗКИ ФАЙЛА --------------------------
 

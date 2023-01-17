@@ -95,7 +95,7 @@ func Decrypt(key []byte, pathFile string) (string, error) {
 
 	// в программе заложено, если файл не кратен 16 блокам => он поврежден (см. Encrypt)
 	if sizeEncFile < 32 || sizeEncFile % 16 != 0 {
-		s := spoof.NewSpoofExt(".txt", DecryptFile)
+		s := spoof.NewSpoof(DecryptFile)
 		return s.GenerateSpoofFile(), nil
 		//return "", errors.New("Зашифрованный файл поврежден")
 	}
@@ -122,7 +122,7 @@ func Decrypt(key []byte, pathFile string) (string, error) {
 	// потому что в зашифрованном добавляется дополнительный блок до ровных 16 байт
 	diff := (sizeEncFile - 16) - int64(sizePlainFile)
 	if diff >= 16 || diff < 0 {
-		s := spoof.NewSpoofExt(".txt", DecryptFile)
+		s := spoof.NewSpoof(DecryptFile)
 		return s.GenerateSpoofFile(), nil
 		//return "", errors.New("Неверный ключ")
 	}

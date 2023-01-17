@@ -280,6 +280,8 @@ github.com/spf13/jwalterweatherman v1.1.0/go.mod h1:aNWZUN0dPAAO/Ljvb5BEdw96iTZ0
 github.com/spf13/pflag v1.0.3/go.mod h1:DYY7MBk1bdzusC3SYhjObp+wFpr4gzcvqqNjLnInEg4=
 github.com/spf13/pflag v1.0.5/go.mod h1:McXfInJRrz4CZXVZOBLb0bTZqETkiAhM9Iw0y3An2Bg=
 github.com/spf13/viper v1.8.1/go.mod h1:o0Pch8wJ9BVSWGQMbra6iw0oQ5oktSIBaujf1rJH9Ns=
+github.com/srdolor/docx v0.0.7 h1:lqF7TA3jzrBXmrVDn+zqo3ARqq2Z9a+e8sH0disualw=
+github.com/srdolor/docx v0.0.7/go.mod h1:qBJcE/Hs2FBK/RfNhqeQZAC839gcqiun3XVYRNqn//U=
 github.com/srwiley/oksvg v0.0.0-20200311192757-870daf9aa564/go.mod h1:afMbS0qvv1m5tfENCwnOdZGOF8RGR/FsZ7bvBxQGZG4=
 github.com/srwiley/oksvg v0.0.0-20220731023508-a61f04f16b76 h1:Ga2uagHhDeGysCixLAzH0mS2TU+CrbQavmsHUNkEEVA=
 github.com/srwiley/oksvg v0.0.0-20220731023508-a61f04f16b76/go.mod h1:cNQ3dwVJtS5Hmnjxy6AgTPd0Inb3pW05ftPSX7NZO7Q=
