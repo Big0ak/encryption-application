@@ -151,7 +151,7 @@ func main() {
 	wid_inputKey.SetPlaceHolder("Введите ключ")
 	// Валидация ключа
 	wid_inputKey.Validator = func(input string) error {
-		if len(input) < 8 {
+		if len([]rune(input)) < 8 {
 			return errors.New("")
 		}
 		return nil
@@ -242,7 +242,7 @@ func main() {
 		for range time.Tick(time.Second) {
 			if sourceFileLoaded {
 				cont_UploadFile.Hide()
-				if len(nameFile) > 30 {
+				if len([]rune(nameFile)) > 30 {
 					field_nameFile.Set(nameFile[0:27] + "...")
 				} else {
 					field_nameFile.Set(nameFile)
