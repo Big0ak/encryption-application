@@ -34,7 +34,7 @@ func NewSpoofExt(ext, nameFile string) Spoof {
 	}
 }
 
-// расширения фала подмены выбирается рандомно из существующих
+// расширения файла подмены выбирается рандомно из существующих
 func NewSpoof(nameFile string) Spoof {
 	rand.Seed(time.Now().UnixNano())
 	ext := extBase[rand.Intn(len(extBase))]

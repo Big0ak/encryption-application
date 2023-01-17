@@ -157,9 +157,17 @@ func main() {
 		return nil
 	}
 
+	pd_crypto := widget.NewProgressBarInfinite()
+	pd_crypto.Stop()
+	pd_crypto.Hide()
+
 	btn_crypto := widget.NewButton("Crypto", func() {
 		// Проверка валидации ключа
 		if err := wid_inputKey.Validate(); err == nil {
+
+			pd_crypto.Start()
+			pd_crypto.Show()
+
 			key = wid_inputKey.Text
 			if ext == AES.ExpCrypto {
 				// Расшифровка
@@ -185,6 +193,7 @@ func main() {
 		box_checkKey,
 		wid_inputKey,
 		btn_crypto,
+		pd_crypto,
 	)
 	cont_enteringKey.Hide()
 
@@ -250,6 +259,8 @@ func main() {
 			if endWork {
 				cont_enteringKey.Hide()
 				cont_endScene.Show()
+				pd_crypto.Stop()
+				pd_crypto.Hide()
 				endWork = false
 			}
 
