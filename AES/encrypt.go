@@ -66,7 +66,7 @@ func encryptBlock(w [nb * (nr + 1)]uint32, plainBlock []byte) []byte {
 		s0, s1, s2, s3 = t0, t1, t2, t3
 	}
 
-	// поледние раунды ShiftRows, SubBytes, AddRoundKey
+	// поcледние раунды ShiftRows, SubBytes, AddRoundKey
 	s0 = subBytesCol((t0>>24&0xff)<<24|(t1>>16&0xff)<<16|(t2>>8&0xff)<<8|t3&0xff) ^ w[4*nr]
 	s1 = subBytesCol((t1>>24&0xff)<<24|(t2>>16&0xff)<<16|(t3>>8&0xff)<<8|t0&0xff) ^ w[4*nr+1]
 	s2 = subBytesCol((t2>>24&0xff)<<24|(t3>>16&0xff)<<16|(t0>>8&0xff)<<8|t1&0xff) ^ w[4*nr+2]
@@ -124,7 +124,7 @@ func decryptBlock(w [nb * (nr + 1)]uint32, encBlock []byte) []byte {
 		s0, s1, s2, s3 = t0, t1, t2, t3
 	}
 
-	// поледние раунды InvShiftRows, InvSubBytes, AddRoundKey
+	// поcледние раунды InvShiftRows, InvSubBytes, AddRoundKey
 	s0 = invSubBytesCol((t0>>24&0xff)<<24|(t3>>16&0xff)<<16|(t2>>8&0xff)<<8|t1&0xff) ^ w[0]
 	s1 = invSubBytesCol((t1>>24&0xff)<<24|(t0>>16&0xff)<<16|(t3>>8&0xff)<<8|t2&0xff) ^ w[1]
 	s2 = invSubBytesCol((t2>>24&0xff)<<24|(t1>>16&0xff)<<16|(t0>>8&0xff)<<8|t3&0xff) ^ w[2]

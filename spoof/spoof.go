@@ -42,7 +42,7 @@ func NewSpoof(nameFile string) Spoof {
 	return NewSpoofExt(ext, nameFile)
 }
 
-// Запрос по api рандомного текста
+// запрос по api рандомного текста
 func requestText() (string, error) {
 	client := http.Client{}
 	request, err := http.NewRequest(http.MethodGet, url_activity, nil)

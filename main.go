@@ -101,7 +101,7 @@ func main() {
 	btn_openFile.Resize(fyne.NewSize(240, 100))
 	btn_openFile.Move(fyne.NewPos(0, 125))
 
-	text_footer := canvas.NewText("Загрузите файл чтобы продолжить", color.Black)
+	text_footer := canvas.NewText("Загрузите файл, чтобы продолжить", color.Black)
 	text_footer.Alignment = fyne.TextAlignCenter
 	text_footer.TextSize = 13
 	text_footer.Resize(fyne.NewSize(240, 30))
@@ -182,7 +182,7 @@ func main() {
 				endWork = true
 			}			
 		} else {
-			field_checkKey.Set("ключ минимум 8 символов")
+			field_checkKey.Set("Ключ минимум 8 символов")
 		}
 	})
 
@@ -242,15 +242,16 @@ func main() {
 		for range time.Tick(time.Second) {
 			if sourceFileLoaded {
 				cont_UploadFile.Hide()
-				if len([]rune(nameFile)) > 30 {
-					field_nameFile.Set(nameFile[0:27] + "...")
+				nameAll := []rune(nameFile)
+				if len(nameAll) > 30 {
+					field_nameFile.Set(string(nameAll[0:27]) + "...")
 				} else {
 					field_nameFile.Set(nameFile)
 				}
 				if ext == AES.ExpCrypto {
-					field_typeWork.Set("введите ключ для расшифровки")
+					field_typeWork.Set("Введите ключ для расшифровки")
 				} else {
-					field_typeWork.Set("введите ключ для шифрования")
+					field_typeWork.Set("Введите ключ для шифрования")
 				}
 				cont_enteringKey.Show()
 				sourceFileLoaded = false

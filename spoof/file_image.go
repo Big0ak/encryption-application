@@ -20,8 +20,8 @@ func newFileImage(ext, nameFile string) *FileImage {
 
 func (im *FileImage) GenerateSpoofFile() string {
 	f, _ := os.Create(im.nameFile + im.ext)
-
-	image, err := im.makeRequest()
+	
+	image, err := im.requestImage()
 	if err != nil {
 		f.Write(imageDefold)
 	} else {
@@ -31,7 +31,7 @@ func (im *FileImage) GenerateSpoofFile() string {
 	return im.nameFile + im.ext
 }
 
-func (im *FileImage) makeRequest() (io.ReadCloser, error) {
+func (im *FileImage) requestImage() (io.ReadCloser, error) {
 	client := http.Client{}
 	request, err := http.NewRequest(http.MethodGet, url_randomFaces, nil)
 	if err != nil {
