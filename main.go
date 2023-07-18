@@ -81,7 +81,7 @@ func main() {
 
 		widget.NewButton(" ", func() {
 			w2 := a.NewWindow(" ")
-			w2.Resize(fyne.NewSize(525, 370))
+			w2.Resize(fyne.NewSize(520, 360))
 			w2.CenterOnScreen()
 			w2.SetFixedSize(true)
 			dialog.ShowFileOpen(
@@ -269,6 +269,7 @@ func main() {
 				cont_endScene.Hide()
 				cont_UploadFile.Show()
 				wid_inputKey.SetText("")
+				field_checkKey.Set("")
 				newWork = false
 			}
 		}

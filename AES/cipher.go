@@ -25,7 +25,7 @@ func Encrypt(key []byte, pathFile string) (string, error) {
 	// Размер исходного файла в байтах
 	sizePlainFile := f.Size()
 
-	// Моздание зашифрованного файла
+	// Создание зашифрованного файла
 	encFile, err := os.Create(CipherFile)
 	if err != nil {
 		return "", err

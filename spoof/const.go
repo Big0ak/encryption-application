@@ -5,7 +5,7 @@ var extBase = [...]string{".txt", ".jpeg", ".docx"}
 
 var (
 	url_activity = "http://www.boredapi.com/api/activity/"
-	url_randomFaces = "https://thispersondoesnotexist.com/image"
+	url_randomFaces = "https://thispersondoesnotexist.com"
 )
 
 var textDefold = "Catch up with a friend over a lunch date"
